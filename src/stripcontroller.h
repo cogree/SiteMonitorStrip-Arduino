@@ -1,14 +1,8 @@
 #ifndef stripcontroller_H_   /* Include guard */
 #define stripcontroller_H_
 
-#include <Adafruit_NeoPixel.h>
-
-#if (ARDUINO >= 100)
- #include <Arduino.h>
-#else
- #include <WProgram.h>
- #include <pins_arduino.h>
-#endif
+#include <NeoPixelBrightnessBus.h>
+#include <Arduino.h>
 
 #ifndef COLOR_RED
   #define COLOR_RED 0x00FF0000
@@ -48,10 +42,9 @@ class NeoPixel_StripController {
     void loop(void);
     
   private:
-    LED_Model             *_models;
-    unsigned short        _status_led;
-    Adafruit_NeoPixel     *_strip;
-    
+    LED_Model                                               *_models;
+    unsigned short                                          _status_led;
+    NeoPixelBrightnessBus<NeoGrbFeature, Neo400KbpsMethod>  *_strip;    
 
     void expire_index(uint16_t);
 };

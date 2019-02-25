@@ -3,12 +3,11 @@
 NeoPixel_StripController::NeoPixel_StripController(uint16_t num_leds, uint8_t led_driver_pin, uint16_t status_led) {  
   _status_led = status_led;
   _models = new LED_Model[num_leds];  
-  _strip = new Adafruit_NeoPixel(num_leds, led_driver_pin, NEO_GRB + NEO_KHZ400);
-  reset();
+  _strip = new NeoPixelBrightnessBus<NeoGrbFeature, Neo400KbpsMethod>(num_leds, led_driver_pin);
 }
 
 NeoPixel_StripController::~NeoPixel_StripController() {
-  _strip -> ~Adafruit_NeoPixel();
+  _strip -> ~NeoPixelBrightnessBus();
   delete [] _models;
 }
 
@@ -17,9 +16,9 @@ void NeoPixel_StripController::begin() {
 }
 
 void NeoPixel_StripController::begin(uint8_t brightness) {
-  _strip -> begin();
-  _strip -> setBrightness(brightness);
-  _strip -> show();
+  _strip -> Begin();
+  _strip -> SetBrightness(brightness);
+  _strip -> Show();
 }
 
 void NeoPixel_StripController::add_led(uint32_t color, uint16_t duration_secs) {
@@ -27,7 +26,7 @@ void NeoPixel_StripController::add_led(uint32_t color, uint16_t duration_secs) {
 }
 
 void NeoPixel_StripController::add_led_with_blink(uint32_t color, uint16_t duration_secs, uint32_t blink_interval_ms) {
-  int pixelCount =  _strip -> numPixels();
+  int pixelCount =  _strip -> PixelCount();
   int indexSeed = random(pixelCount);
     
   for(int i = 0; i < pixelCount; ++i) {
@@ -47,7 +46,7 @@ void NeoPixel_StripController::add_led_with_blink(uint32_t color, uint16_t durat
 }
 
 void NeoPixel_StripController::reset() {
-  for(int i = 0; i < _strip -> numPixels(); ++i)
+  for(int i = 0; i < _strip -> PixelCount(); ++i)
     expire_index(i);
 }
 
@@ -56,13 +55,13 @@ void NeoPixel_StripController::set_status_led(uint32_t rgb) {
   model -> rgb = rgb;
   model -> expires_at_ms = -1;
   model -> expired = false;  
-  _strip -> setPixelColor(_status_led, model -> rgb);
-  _strip -> show();
+  _strip -> SetPixelColor(_status_led, HtmlColor(model -> rgb));
+  _strip -> Show();
 }
 
 void NeoPixel_StripController::set_brightness(uint8_t brightness) {
-  _strip -> setBrightness(brightness);
-  _strip -> show();
+  _strip -> SetBrightness(brightness);
+  _strip -> Show();
 }
 
 void NeoPixel_StripController::expire_index(uint16_t index) {
@@ -75,18 +74,18 @@ void NeoPixel_StripController::expire_index(uint16_t index) {
   model -> last_blink_ms = 0;
   model -> blink_interval_ms = 0;
   
-  _strip -> setPixelColor(index, 0);
+  _strip -> SetPixelColor(index, HtmlColor(0));
 }
 
 void NeoPixel_StripController::loop() {
   unsigned long cur_time = millis();
   
-  for(int i = 0; i < _strip -> numPixels(); ++i) {
+  for(int i = 0; i < _strip -> PixelCount(); ++i) {
     LED_Model* model = &_models[i];
 
     // Rules do not apply to the status LED.
     if(i == _status_led) {
-      _strip -> setPixelColor(i, model -> rgb);
+      _strip -> SetPixelColor(i, HtmlColor(model -> rgb));
       continue;
     }
 
@@ -95,7 +94,7 @@ void NeoPixel_StripController::loop() {
       expire_index(i);
       
     if(model -> expired) {
-       _strip -> setPixelColor(i, model -> rgb);
+       _strip -> SetPixelColor(i, HtmlColor(model -> rgb));
       continue;
     }
     
@@ -105,13 +104,13 @@ void NeoPixel_StripController::loop() {
         continue;  
 
       model -> last_blink_ms = cur_time;
-      _strip -> setPixelColor(i, _strip -> getPixelColor(i) == 0 ? model -> rgb : 0);   
+      _strip -> SetPixelColor(i, ((HtmlColor)_strip -> GetPixelColor(i)).Color == 0 ? HtmlColor(model -> rgb) : HtmlColor(0));   
     } 
     // Case: Standard LED
     else {
-       _strip -> setPixelColor(i, model -> rgb);
+       _strip -> SetPixelColor(i, HtmlColor(model -> rgb));
     }
   }
 
-  _strip -> show();
+  _strip -> Show();
 }

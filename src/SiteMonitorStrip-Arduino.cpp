@@ -1,12 +1,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
-#ifdef __AVR__
-  #include <avr/power.h>
-#endif
 #include "stripcontroller.h"
 
-#define LED_DRIVER_PIN 1
+#define LED_DRIVER_PIN 16
 #define STATUS_LED_INDEX 0
 #define NUM_LEDS 60
 
@@ -24,13 +21,14 @@ void setup_wifi();
 void reconnect();
 void callback(char* topic, byte* payload, unsigned int length);
 
-
 void setup() {
   Serial.begin(115200);
   _controller = new NeoPixel_StripController(NUM_LEDS, LED_DRIVER_PIN, STATUS_LED_INDEX);
   _controller -> begin();
   _controller -> set_status_led(COLOR_RED);
+  
   setup_wifi();
+
   _client.setServer(_mqtt_server, 1883);
   _client.setCallback(callback);
   _controller -> set_status_led(COLOR_YELLOW);
@@ -52,7 +50,6 @@ void loop() {
 }
 
 void setup_wifi() {
-
   // We start by connecting to a WiFi network
   Serial.println();
   Serial.println("Connecting to " + String(_ssid));
@@ -65,7 +62,6 @@ void setup_wifi() {
     Serial.print(".");
   }
 
-  delay(10);
   randomSeed(micros());
 
   Serial.println();
@@ -114,17 +110,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void reconnect() {
-  if (!_client.connected()) {
-    Serial.print("Attempting MQTT connection...");
+  if (_client.connected()) 
+    return;
 
-    if (_client.connect(_clientId)) {
-      Serial.println("connected");
-      _client.subscribe(_topic);
-      _controller -> set_status_led(COLOR_GREEN);
-    } else {
-      Serial.print("failed, rc=");
-      Serial.println(_client.state());
-      _controller -> set_status_led(COLOR_YELLOW);
-    }
+  Serial.print("Attempting MQTT connection...");
+
+  if (_client.connect(_clientId)) {
+    Serial.println("connected");
+    _client.subscribe(_topic);
+    _controller -> set_status_led(COLOR_GREEN);
+  } else {
+    Serial.print("failed, rc=");
+    Serial.println(_client.state());
+    _controller -> set_status_led(COLOR_YELLOW);
   }
 }
